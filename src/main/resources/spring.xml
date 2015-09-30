@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:task="http://www.springframework.org/schema/task"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+			http://www.springframework.org/schema/beans/spring-beans-4.1.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+			http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.1.xsd">
+    <context:property-placeholder  ignore-resource-not-found="true"
+                                   location="classpath*:redis.properties,config.properties" />
+    <!--
+    <task:annotation-driven/> -->
+    <context:component-scan base-package="com.yaolan.service" />
+
+    <import resource="spring-redis.xml" />
+
+        <!-- Enables the Spring Task @Scheduled programming model
+    <task:executor id="executor" pool-size="5" />
+    <task:scheduler id="scheduler" pool-size="10" />
+    <task:annotation-driven executor="executor" scheduler="scheduler"  />-->
+
+    <!-- 每隔${sync.Interval}毫秒，对readRedisToPhp的service做一次调度-->
+    <task:scheduled-tasks>
+        <task:scheduled ref="readRedisToPhp" method="service" fixed-rate="${sync.Interval}"/>
+    </task:scheduled-tasks>
+
+    <!-- 配置线程池 -->
+    <bean id ="threadPoolTaskExecutor"  class ="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor" >
+        <!-- 线程池维护线程的最少数量 -->
+        <property name ="corePoolSize" value ="100" />
+        <!-- 线程池维护线程所允许的空闲时间 -->
+        <property name ="keepAliveSeconds" value ="30000" />
+        <!-- 线程池维护线程的最大数量 -->
+        <property name ="maxPoolSize" value ="1000" />
+        <!-- 线程池所使用的缓冲队列 -->
+        <property name ="queueCapacity" value ="200" />
+    </bean>
+
+    <!-- 配置log4 -->
+    <bean id="log4jinit" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass" value="org.springframework.util.Log4jConfigurer"/>
+        <property name="targetMethod" value="initLogging"/>
+        <property name="arguments">
+            <list>
+                <value>classpath:log4j.xml</value>
+            </list>
+        </property>
+    </bean>
+
+</beans>
